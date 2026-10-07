@@ -164,3 +164,7 @@ CLAUDE.md
 .mcp.safe.json
 .claudeignore
 .specify/
+
+# Local database backups and verification artifacts
+*.dump
+.local/

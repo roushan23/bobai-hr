@@ -1,223 +1,115 @@
-# Horilla HRMS
+# BOBAI HR
 
-[![License: LGPL v2.1](https://img.shields.io/badge/License-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1)
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Django](https://img.shields.io/badge/django-5.0+-green.svg)](https://www.djangoproject.com/)
-[![Stars](https://img.shields.io/github/stars/horilla/horilla-hr)](https://github.com/horilla/horilla-hr/stargazers)
-[![Forks](https://img.shields.io/github/forks/horilla/horilla-hr)](https://github.com/horilla/horilla-hr/network/members)
+A white-label HRMS foundation built from [Horilla HR](https://github.com/horilla/horilla-hr), stable branch `2.0`. Employee management, recruitment, onboarding/offboarding, attendance, leave, payroll, performance, assets, helpdesk, projects, reports, APIs, and existing background jobs remain intact. This milestone changes basic branding and local development configuration only.
 
-> [!IMPORTANT]
-> **`2.0` is now this repository’s default branch.** Use it to run or deploy Horilla (a plain `git clone` checks it out). To contribute code, branch from and open PRs against `dev/v2.0` — GitHub still pre-selects `2.0` as the PR base, so switch it manually. v1 (`1.0`/`master`) is deprioritized, with fixes considered case-by-case rather than on a guaranteed schedule. Full details → [Discussion #1127](https://github.com/horilla/horilla-hr/discussions/1127).
+## Local development
 
-> **A comprehensive, free, and open-source Human Resource Management System (HRMS) designed to streamline HR operations and enhance organizational efficiency.**
+Install Git and Docker Desktop with the Linux containers / WSL 2 backend. No host Python, PostgreSQL, Redis, or Node installation is needed. Start Docker Desktop before running these commands. The first source build downloads Horilla's dependencies and can take several minutes.
 
-## 🚀 Features
-
-### Core HR Modules
-- 👥 **Employee Management** - Centralized workforce data with LDAP integration
-- 🎯 **Recruitment** - End-to-end hiring process from job posting to onboarding
-- 📋 **Onboarding & Offboarding** - Structured workflows for employee lifecycle
-- ⏰ **Attendance & Time Tracking** - Biometric integration and automated check-in/out
-- 🏖️ **Leave Management** - Policy enforcement, approvals, and balance tracking
-- 💰 **Payroll** - Automated salary processing, tax calculations, and compliance
-- 📊 **Performance Management** - Goal setting, reviews, and continuous feedback
-- 🏢 **Asset Management** - Track and manage company resources
-- 🎫 **Helpdesk** - Centralized HR support and ticketing system
-
-
-## 📋 Table of Contents
-
-- [Which Branch Do I Want?](#-which-branch-do-i-want)
-- [Quick Start](#-quick-start)
-- [Installation](#-installation)
-- [Deployment](#-deployment)
-- [Contributing](#-contributing)
-- [Security](#-security)
-- [Support](#-support)
-- [License](#-license)
-
-## 🌳 Which Branch Do I Want?
-
-- **`2.0`** (default) — the latest stable v2 snapshot. This is what a plain `git clone` gives you. Use it to run or deploy Horilla.
-- **`dev/v2.0`** — the active integration branch. If you want to contribute code, branch from and open PRs against this, not `2.0`.
-- **`1.0`/`master`** — v1, now deprioritized (fixes considered case-by-case, no guaranteed schedule). Not deleted, but no longer where active development happens.
-
-See [Discussion #1127](https://github.com/horilla/horilla-hr/discussions/1127) for full background on this transition.
-
-## ⚡ Quick Start
-
-### Using the official Docker image (Recommended)
-
-Published for `linux/amd64` and `linux/arm64` as
-[`horilla/horilla-hr`](https://hub.docker.com/r/horilla/horilla-hr):
-
-```bash
-docker pull horilla/horilla-hr:2.1.5
+```powershell
+git clone --branch bobai-foundation https://github.com/roushan23/bobai-hr.git
+cd bobai-hr
+Copy-Item .env.example .env
+docker compose up --build -d --wait --wait-timeout 900
 ```
 
-Pin an exact version in production rather than `latest`, so a deploy cannot
-pick up a new release unattended; see
-[all tags](https://hub.docker.com/r/horilla/horilla-hr/tags) for the current
-one. The
-[repository overview](https://hub.docker.com/r/horilla/horilla-hr) documents
-every environment variable, the volumes to back up, and a working Compose file.
+On macOS/Linux, replace `Copy-Item .env.example .env` with `cp .env.example .env`.
 
-First boot applies the full migration set before the web server binds, which
-takes a few minutes on an empty database.
+Open **http://localhost:8000/login/**. Use **Initialize Database** to enter the existing first-run wizard. The local setup password is the `DB_INIT_PASSWORD` value in `.env` (default: `bobai-local-setup`). Create your administrator, company, department and job position through that wizard, then sign in with the administrator credentials you chose. This password unlocks setup only; it is not an administrator login. Start with your own empty database; demo fixtures are optional and are not loaded by this setup.
 
-### Building from source with Docker
+If you are using this existing checkout at `D:\BOBcomp\BOBHR`, it already has `.env`; start with `docker compose up -d --wait --wait-timeout 900`.
 
-```bash
-# Clone the repository (defaults to the stable 2.0 branch)
-git clone https://github.com/horilla/horilla-hr.git
-cd horilla-hr
+The web app is bound to `127.0.0.1:8000`. PostgreSQL and Redis are available only inside the Docker network. To use another web port, change `WEB_PORT` in `.env` and recreate services with `docker compose up -d`; trusted CSRF origins follow the configured port. Environment values in `.env.example` are local development defaults. The upstream entrypoint replaces the default Django secret with a generated key persisted in the media volume.
 
-# Start with Docker Compose
-docker compose up -d
+## Daily commands
 
-# Access the application
-open http://localhost:8000
+Run from the repository root:
+
+```powershell
+# Start / stop without deleting data
+docker compose up -d --wait --wait-timeout 900
+docker compose down
+
+# Status / logs
+docker compose ps
+docker compose logs -f web scheduler
+
+# Django commands
+docker compose exec web python manage.py check
+docker compose exec web python manage.py migrate --check
+docker compose exec web python manage.py shell
+
+# After adding migrations or changing static assets
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py collectstatic --noinput
+docker compose restart web scheduler
+
+# After changing dependencies or the Dockerfile
+docker compose up --build -d --wait --wait-timeout 900
+
+# Repeat the foundation smoke checks (rolls back its temporary HR records)
+Get-Content scripts/verify_local.py -Raw | docker compose exec -T web python manage.py shell
 ```
 
-Full Docker guide, including production deployment: [docker/README.md](docker/README.md)
+On macOS/Linux, run the smoke check as `docker compose exec -T web python manage.py shell < scripts/verify_local.py`.
 
-### Manual Installation
+Source is bind-mounted into `/app`. Gunicorn reloads Python changes and Django reads templates afresh in development. Restart the scheduler after editing its Python code. Dependencies live inside the image; uploaded files and collected static files use named volumes.
 
-Requires **Python 3.12, 3.13 or 3.14**, and pip 21.3 or newer. Python 3.15 is
-not usable yet: `spacy` declares `Requires-Python <3.15` and is imported at
-module scope, so the app cannot start on it.
+Check the HTTP probes in PowerShell:
 
-```bash
-# Clone and setup (defaults to the stable 2.0 branch)
-git clone https://github.com/horilla/horilla-hr.git
-cd horilla-hr
-
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Upgrade pip FIRST. A venv inherits the system pip, and an older one does not
-# recognise current manylinux wheel tags -- it then tries to compile packages
-# like cryptography and PyMuPDF from source, which needs a C toolchain most
-# machines do not have. The Docker build already does this; do the same here.
-python -m pip install --upgrade pip
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Setup environment
-cp .env.dist .env
-# Edit .env with your configuration
-
-# Initialize database
-python manage.py migrate
-python manage.py compilemessages
-python manage.py collectstatic
-
-# Run development server
-python manage.py runserver
+```powershell
+Invoke-RestMethod http://localhost:8000/health/
+Invoke-RestMethod http://localhost:8000/ready/
 ```
 
+`/ready/` should report `database: ok`, `cache: ok`, and `scheduler: ok` after startup. The scheduler starts only after web has migrated the database and passed readiness. Keep exactly one scheduler because Horilla's payroll and backup jobs are not designed for multiple simultaneous runners. Readiness does not gate on scheduler registration, avoiding a circular startup dependency. `/health/` deliberately retains Horilla's API product identifier for compatibility with existing clients.
 
-## 🛠 Installation
+## Data and recovery
 
-For detailed installation instructions, configuration guides, and platform-specific setup instructions, please visit our comprehensive documentation:
+The Compose project is named `bobai-hr`. Its volumes preserve PostgreSQL (`postgres_data`), Redis (`redis_data`), uploads and generated secret (`media`), and collected assets (`staticfiles`) across container recreation and `docker compose down`.
 
-### 📖 [Complete Installation Guide → docs.horilla.com/technical/v2.0/ ](https://docs.horilla.com/technical/v2.0/)
+To back up the local database without corrupting a binary dump through PowerShell redirection:
 
-Our documentation includes:
-- **Step-by-step installation** for all supported platforms
-- **Database configuration** guides
-- **Environment setup** instructions
-- **Production deployment** best practices
-- **Troubleshooting** common issues
-- **Advanced configuration** options
+```powershell
+docker compose exec db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/bobai-hr.dump'
+docker compose cp db:/tmp/bobai-hr.dump ./bobai-hr.dump
+```
 
-<!-- Need help? Check out the [Installation FAQ](https://docs.horilla.com) or reach out to our [community support](#-support). -->
+Back up the media volume separately when you have real uploads. Do not change database credentials in `.env` after a database volume has been initialized unless you also update the database role; PostgreSQL's initialization variables only apply to an empty volume.
 
-## 🚀 Deployment
+**Destructive local reset:** `docker compose down --volumes` permanently deletes this project's database, Redis data, uploads, and generated secret. Use only when intentionally discarding local data. Start again with `docker compose up --build -d --wait --wait-timeout 900`.
 
-For production deployment guides including Nginx, Apache, and cloud platforms:
-### 📖 [Deployment Guide → docs.horilla.com/technical/v2.0/doc/deployment/nginx-gunicorn](https://docs.horilla.com/technical/v2.0/doc/deployment/nginx-gunicorn)
+If startup fails, check `docker compose logs --tail 100 web scheduler db redis`. If port 8000 is occupied, set a different `WEB_PORT`. If Docker cannot connect to the engine, start Docker Desktop and confirm it is using Linux containers. Startup runs existing migrations, compiles missing translation catalogs, and collects static files; allow the first boot to finish before opening the app.
 
+## Foundation verification
 
-## 🤝 Contributing
+Verified locally on 7 October 2026: Docker image build and Compose startup, Django system checks, no unapplied migrations, PostgreSQL/Redis/scheduler readiness, logo and manifest HTTP serving, branded login and password-reset pages, CSRF protection, first-run setup authentication, administrator sign-in, and authenticated employee, attendance, recruitment, asset, payroll-contract, leave-type and admin pages. Browser inspection confirmed the supplied logo loads. The smoke check rolls back its temporary records; the local database remains ready for your own administrator setup. This is a foundation smoke check, not acceptance testing of every upstream HR workflow.
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+## Customization boundaries
 
-### Development Setup
+- `bobai/settings.py` extends Horilla settings, enables the BOBAI app and requires PostgreSQL. Docker selects it through `DJANGO_SETTINGS_MODULE`.
+- `bobai/context_processors.py` sets the default BOBAI name and logo while preserving Horilla's optional company branding.
+- `bobai/static/bobai/images/logo.png` is the supplied **public/BobHR AI-Powered HRMS Logo (2).png**, copied unchanged. The product name in the UI is **BOBAI HR**.
+- Existing templates have small hooks for `brand_name` and `brand_logo`; HR model names, migrations, URLs and core business logic retain their upstream identifiers.
+- Future custom attendance, field attendance, payroll rules and AI administration should live in separate apps added through `bobai/settings.py`. No custom rules or AI features are implemented in this milestone.
+- `docker-compose.yml` is the BOBAI local development stack. The inherited `docker-compose.prod.yml` is upstream reference material and is not validated with this stack. Production deployment requires separate configuration; do not combine the two files.
 
-```bash
-# Fork and clone your fork
-git clone -b dev/v2.0 https://github.com/YOUR_USERNAME/horilla-hr.git
-cd horilla-hr
+Django's admin branding also uses BOBAI HR. Horilla's original license, copyright notices and attribution remain. The unchanged upstream README is preserved at [docs/upstream/README.md](docs/upstream/README.md); its commands describe upstream Horilla, not this BOBAI configuration.
 
-# Add upstream remote
+## Git lineage
+
+Fork: https://github.com/roushan23/bobai-hr
+Upstream: https://github.com/horilla/horilla-hr
+Foundation branch: `bobai-foundation`
+Starting upstream commit: `b947b0813936e7f1dcb16c63ff65326e45c9f709` (`2.0`)
+
+The GitHub clone preserves upstream history. The supplied `horilla-hr-2.0.zip` was inspected as a reference; the stable Git checkout is the source of truth. The first BOBAI commit is made only after local runtime verification. `.env`, database dumps, uploads, translation binaries and runtime files are excluded from Git.
+
+A fresh clone has only `origin`; add upstream once when needed:
+
+```powershell
 git remote add upstream https://github.com/horilla/horilla-hr.git
-
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Install development dependencies
-pip install -r requirements.txt
-
-# Submit pull request
+git fetch upstream 2.0
 ```
 
-> **Note:** `2.0` is the repo default, so GitHub pre-selects it as your PR base. Before submitting, change the base branch to `dev/v2.0` — that's where active development and reviews happen, not `2.0`.
-
-### Code Standards
-
-- Follow [PEP 8](https://pep8.org/) for Python code
-- Use [Black](https://black.readthedocs.io/) for code formatting
-- Write tests for new features
-- Update documentation for user-facing changes
-
-## 🔒 Security
-
-### Security Features
-
-- 🔐 **Authentication & Authorization** - Role-based access control
-- 🛡️ **Data Protection** - Encrypted sensitive data storage
-- 🔍 **Audit Trails** - Comprehensive activity logging
-- 🚫 **Input Validation** - XSS and injection protection
-- 🔒 **Session Security** - Secure session management
-
-### Reporting Security Issues
-
-Please report security vulnerabilities via [GitHub Private Vulnerability Reporting](https://github.com/horilla/horilla-hr/security/advisories/new), not email. Do not create public GitHub issues for security vulnerabilities. See [SECURITY.md](SECURITY.md) for full details.
-
-### Security Best Practices
-
-- Always use HTTPS in production
-- Regularly update dependencies
-- Use strong passwords and enable 2FA
-- Monitor logs for suspicious activities
-
-## 📞 Support
-
-### Community Support
-
-- 📖 **Documentation**: [docs.horilla.com](https://docs.horilla.com)
-- 💬 **GitHub Discussions**: [GitHub Discussions](https://github.com/horilla/horilla-hr/discussions)
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/horilla/horilla-hr/issues)
-- ✨ **Feature Requests**: [GitHub Issues](https://github.com/horilla/horilla-hr/issues)
-
-### Professional Support
-
-For enterprise support, custom development, and consulting services:
-- 📧 **Email**: support@horilla.com
-- 🌐 **Website**: [www.horilla.com](https://www.horilla.com)
-
-
-## 📄 License
-
-This project is licensed under the [LGPL-2.1 License](LICENSE) - see the LICENSE file for details.
-
-<div align="center">
-
-**Made with ❤️ by the Horilla Team**
-
-[⭐ Star us on GitHub](https://github.com/horilla/horilla-hr) | [🐛 Report Bug](https://github.com/horilla/horilla-hr/issues) | [💡 Request Feature](https://github.com/horilla/horilla-hr/issues)
-
-</div>
+Review upstream changes on a separate branch before merging; preserve BOBAI customization boundaries and repeat smoke checks after upgrades. This repository retains the upstream [LGPL-2.1 license](LICENSE).

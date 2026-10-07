@@ -1,0 +1,17 @@
+{
+  "name": "BOBAI HR",
+  "short_name": "BOBAI HR",
+  "description": "Human Resource Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#E54F38",
+  "icons": [
+    {
+      "src": "/static/bobai/images/logo.png",
+      "type": "image/png",
+      "sizes": "any",
+      "purpose": "any"
+    }
+  ]
+}

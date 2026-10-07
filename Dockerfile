@@ -129,15 +129,15 @@ USER appuser
 ARG VERSION=dev
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
-LABEL org.opencontainers.image.title="Horilla HR" \
-      org.opencontainers.image.description="Free and open source HR software" \
+LABEL org.opencontainers.image.title="BOBAI HR" \
+      org.opencontainers.image.description="BOBAI HR white-label HRMS based on Horilla" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${VCS_REF}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.source="https://github.com/horilla/horilla-hr" \
       org.opencontainers.image.url="https://www.horilla.com" \
       org.opencontainers.image.documentation="https://docs.horilla.com" \
-      org.opencontainers.image.vendor="Horilla" \
+      org.opencontainers.image.vendor="BOBAI" \
       org.opencontainers.image.licenses="LGPL-2.1"
 
 EXPOSE 8000
